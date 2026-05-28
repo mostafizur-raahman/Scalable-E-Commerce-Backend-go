@@ -1,41 +1,36 @@
 package cmd
 
 import (
+	"ecommerce/internal/config"
+	"ecommerce/internal/database"
 	"ecommerce/internal/middleware"
-	"ecommerce/internal/utils"
+	"ecommerce/internal/routes"
+	"ecommerce/internal/services"
 	"log"
 	"net/http"
+	"strconv"
 )
 
-type Product struct {
-	Id    int64  `json:"id"`
-	Name  string `json:"name"`
-	Price int64  `json:"price"`
-}
-
-func productsHandler(w http.ResponseWriter, r *http.Request) {
-	products := []Product{
-		{Id: 1, Name: "Laptop", Price: 99999},
-		{Id: 2, Name: "Wireless Mouse", Price: 2500},
-		{Id: 3, Name: "Mechanical Keyboard", Price: 7500},
-	}
-
-	utils.WriteJSON(w, 200, products)
-}
 func Run() {
+	// 1️⃣ Load configuration
+	cnf := config.Get()
+	addr := ":" + strconv.Itoa(cnf.Port)
+
+	// 2️⃣ Initialize Data Layer (Repository)
+	productRepo := database.NewProductRepository()
+
+	svc := services.NewProductService(productRepo, productRepo, productRepo)
+
 	mux := http.NewServeMux()
-	addr := ":8000"
+	routes.SetupRoutes(mux, svc)
 
-	mux.HandleFunc("GET /products", productsHandler)
+	// Apply Middleware Chain
+	mw := middleware.New()
+	mw.Use(middleware.CORS, middleware.Logger)
+	handler := mw.Chain(mux)
 
-	// middleware
-	middleWare := middleware.New()
-	middleWare.Use(middleware.CORS)
-	handler := middleWare.Chain(mux)
-
-	log.Println("Server running on", addr)
+	log.Printf("🚀 Starting %s v%s on %s", cnf.AppName, cnf.Version, addr)
 	if err := http.ListenAndServe(addr, handler); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+		log.Fatalf("❌ Server failed to start: %v", err)
 	}
-
 }
