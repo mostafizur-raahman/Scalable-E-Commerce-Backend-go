@@ -1,8 +1,6 @@
 package main
 
-import (
-	"ecommerce/cmd"
-)
+import cmd "ecommerce/cmd/server"
 
 func main() {
 	cmd.Run()

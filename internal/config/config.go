@@ -1,42 +1,56 @@
 package config
 
 import (
-	"log"
 	"os"
 	"strconv"
+	"sync"
 
 	"github.com/joho/godotenv"
 )
 
-var config Config
-
 type Config struct {
-	Port    int
-	AppName string
-	Version string
+	Port             int
+	AppName          string
+	Version          string
+	DatabaseURL      string
+	DatabaseMaxConns int32
 }
 
-func loadConfig() Config {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Failed to load .env file")
-		os.Exit(1)
-	}
+var (
+	config Config
+	once   sync.Once
+)
+
+func loadConfig() {
+	_ = godotenv.Load()
 
 	port, err := strconv.Atoi(os.Getenv("PORT"))
 	if err != nil {
-		log.Fatalf("Failed to convert to int in .env file")
-		os.Exit(1)
+		port = 8000
 	}
-	config = Config{
-		Port:    port,
-		AppName: os.Getenv("APP_NAME"),
-		Version: os.Getenv("VERSION"),
-	}
-	return config
 
+	maxConns, err := strconv.Atoi(os.Getenv("DB_MAX_CONNS"))
+	if err != nil {
+		maxConns = 10
+	}
+
+	config = Config{
+		Port:             port,
+		AppName:          getEnv("APP_NAME", "E-Commerce API"),
+		Version:          getEnv("VERSION", "1.0.0"),
+		DatabaseURL:      getEnv("DB_URL", "postgres://localhost:5432/ecommerce?sslmode=disable"),
+		DatabaseMaxConns: int32(maxConns),
+	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
 
 func Get() Config {
-	return loadConfig()
+	once.Do(loadConfig)
+	return config
 }

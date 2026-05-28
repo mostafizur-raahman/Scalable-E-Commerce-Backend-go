@@ -1,21 +1,21 @@
 package domain
 
-type Product struct {
-	Id    int64  `json:"id"`
-	Name  string `json:"name"`
-	Price int64  `json:"price"`
+type User struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type Reader interface {
-	GetAll() ([]Product, error)
+	GetAll() ([]User, error)
 }
 
 type Getter interface {
-	GetByID(id int64) (*Product, error)
+	GetByID(id int64) (*User, error)
 }
 
 type Creator interface {
-	Create(product *Product) error
+	Create(User *User) error
 }
 
 type Updater interface {
